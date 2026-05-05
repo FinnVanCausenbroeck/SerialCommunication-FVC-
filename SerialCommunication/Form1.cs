@@ -5,6 +5,7 @@ using System.Data;
 using System.Drawing;
 using System.IO.Ports;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -210,6 +211,66 @@ namespace SerialCommunication
                     string commando;
                     if (checkBoxDigital4.Checked) commando = "set d4 high";
                     else commando = "set d4 low";
+                    serialPortArduino.WriteLine(commando);
+                }
+            }
+            catch (Exception exeption)
+            {
+                labelStatus.Text = "Error: " + exeption.Message;
+                serialPortArduino.Close();
+                radioButtonVerbonden.Checked = false;
+                buttonConnect.Text = "Connect";
+
+            }
+        }
+
+        private void trackBarPWM9_Scroll(object sender, EventArgs e)
+        {
+            try
+            {
+                if (serialPortArduino.IsOpen)
+                {
+                    string commando = String.Format("set pwm9 {0}", trackBarPWM9.Value);
+                    serialPortArduino.WriteLine(commando);
+                }
+            }
+            catch (Exception exeption)
+            {
+                labelStatus.Text = "Error: " + exeption.Message;
+                serialPortArduino.Close();
+                radioButtonVerbonden.Checked = false;
+                buttonConnect.Text = "Connect";
+
+            }
+        }
+
+        private void trackBarPWM10_Scroll(object sender, EventArgs e)
+        {
+            try
+            {
+                if (serialPortArduino.IsOpen)
+                {
+                    string commando = String.Format("set pwm10 {0}", trackBarPWM10.Value);
+                    serialPortArduino.WriteLine(commando);
+                }
+            }
+            catch (Exception exeption)
+            {
+                labelStatus.Text = "Error: " + exeption.Message;
+                serialPortArduino.Close();
+                radioButtonVerbonden.Checked = false;
+                buttonConnect.Text = "Connect";
+
+            }
+        }
+
+        private void trackBarPWM11_Scroll(object sender, EventArgs e)
+        {
+            try
+            {
+                if (serialPortArduino.IsOpen)
+                {
+                    string commando = String.Format("set pwm11 {0}", trackBarPWM11.Value);
                     serialPortArduino.WriteLine(commando);
                 }
             }
