@@ -69,15 +69,15 @@ namespace SerialCommunication
                 else
                 {
                     // ik heb geen verbinding, gebruiker wilt een verbinding maken 
-                    serialPortArduino.PortName = (string) comboBoxPoort.SelectedItem;
-                    serialPortArduino.BaudRate = Int32.Parse((string) comboBoxBaudrate.SelectedItem);
-                    serialPortArduino.DataBits = (int) numericUpDownDatabits.Value;
+                    serialPortArduino.PortName = (string)comboBoxPoort.SelectedItem;
+                    serialPortArduino.BaudRate = Int32.Parse((string)comboBoxBaudrate.SelectedItem);
+                    serialPortArduino.DataBits = (int)numericUpDownDatabits.Value;
 
-                    if (radioButtonParityEven.Checked )
+                    if (radioButtonParityEven.Checked)
                     {
                         serialPortArduino.Parity = Parity.Even;
                     }
-                    else if (radioButtonParityOdd.Checked )
+                    else if (radioButtonParityOdd.Checked)
                     {
                         serialPortArduino.Parity = Parity.Odd;
                     }
@@ -289,6 +289,7 @@ namespace SerialCommunication
         {
             timerOefening3.Enabled = tabControl.SelectedIndex == 3;
             timerOefening4.Enabled = tabControl.SelectedIndex == 4;
+            timerOefening5.Enabled = tabControl.SelectedIndex == 5;
         }
 
         private void timerOefening3_Tick(object sender, EventArgs e)
@@ -347,7 +348,89 @@ namespace SerialCommunication
                     int value = Int32.Parse(antwoord);
                     labelAnalog0.Text = value.ToString();
 
-                    
+
+                }
+            }
+            catch (Exception exeption)
+            {
+                labelStatus.Text = "Error: " + exeption.Message;
+                serialPortArduino.Close();
+                radioButtonVerbonden.Checked = false;
+                buttonConnect.Text = "Connect";
+
+            }
+        }
+
+        private void timerOefening5_Tick(object sender, EventArgs e)
+        {
+            try
+            {
+                if (!serialPortArduino.IsOpen) { labelStatus.Text = "Niet verbonden"; return; }
+
+                // clear any previous buffered data
+                try { serialPortArduino.ReadExisting(); } catch { }
+
+                int raw0 = -1;
+                int raw1 = -1;
+
+                try
+                {
+                    serialPortArduino.WriteLine("get a0");
+                    string response0 = serialPortArduino.ReadLine();
+                    response0 = (response0 ?? string.Empty).Trim();
+                    if (response0.Contains(":")) response0 = response0.Split(':').Last().Trim();
+                    else if (response0.Contains(" ")) response0 = response0.Split(' ').Last().Trim();
+                    int.TryParse(response0, out raw0);
+                }
+                catch (TimeoutException) { /* ignore individual timeout */ }
+
+                try
+                {
+                    serialPortArduino.WriteLine("get a1");
+                    string response1 = serialPortArduino.ReadLine();
+                    response1 = (response1 ?? string.Empty).Trim();
+                    if (response1.Contains(":")) response1 = response1.Split(':').Last().Trim();
+                    else if (response1.Contains(" ")) response1 = response1.Split(' ').Last().Trim();
+                    int.TryParse(response1, out raw1);
+                }
+                catch (TimeoutException) { /* ignore */ }
+
+                double slopeDesired = 40.0 / 1023.0; // 5..45°C
+                double offsetDesired = 5.0;
+                double slopeCurrent = 500.0 / 1023.0; // 0..500°C
+
+                bool haveDesired = raw0 >= 0;
+                bool haveCurrent = raw1 >= 0;
+
+                double desired = 0.0;
+                double current = 0.0;
+
+                if (haveDesired)
+                {
+                    desired = raw0 * slopeDesired + offsetDesired;
+                    try { labelGewensteTemp.Text = desired.ToString("F1") + " °C"; } catch { }
+                }
+
+                if (haveCurrent)
+                {
+                    current = raw1 * slopeCurrent;
+                    try { labelHuidigeTemp.Text = current.ToString("F1") + " °C"; } catch { }
+                }
+
+                if (haveDesired && haveCurrent)
+                {
+                    bool shouldBeOn = current < desired;
+                    try
+                    {
+                        // only send command if state differs to reduce serial traffic
+                        if (checkBoxDigital2.Checked != shouldBeOn)
+                        {
+                            string cmd = shouldBeOn ? "set d2 high" : "set d2 low";
+                            serialPortArduino.WriteLine(cmd);
+                        }
+                        
+                    }
+                    catch { }
                 }
             }
             catch (Exception exeption)
@@ -361,3 +444,8 @@ namespace SerialCommunication
         }
     }
 }
+
+
+
+
+
